@@ -1,0 +1,507 @@
+#include box.spc
+#include box.eqn
+ 
+{File Output}
+#LOOKAT NO;NO2;OH;HO2;O3;BrO;Cl;Br2;Br;Hg;HgBr;HgBr2;HgBrOH;HgBrCl;HgBrNO2;HgBrHO2;HgBrO;HgBr_aq;HgBr2_aq;HgBrOH_aq;HgBrCl_aq;HgBrNO2_aq;HgBrHO2_aq;HgBrO_aq;HgOH;HgOHOH;HgOHCl;HgOHNO2;HgOHHO2;HgOHO;HgOH_aq;HgOHOH_aq;HgOHCl_aq;HgOHNO2_aq;HgOHHO2_aq;HgOHO_aq;HgCl;HgCl2;HgClNO2;HgClHO2;HgClO;HgCl_aq;HgCl2_aq;HgClNO2_aq;HgClHO2_aq;HgClO_aq;Hg_DryDep;Hg_WetDep;Hg_AerDep;
+
+//#MONITOR C5H8;OH;GLYOX;            {Screen Output}
+#MONITOR NO;OH;HO2;O3;BrO;
+
+#INITVALUES                    {Initial Values}
+CFACTOR = 2.46E7 ;             {Conversion Factor} 
+// Variable Species
+O3  = 10.E3 ; 
+CO = 50.E3 ;
+NO2 = 5.0;
+CH4 = 750.E3 ;
+Hg = 0.0268;
+// Hg in holocene = 0.0268 pptv 
+// Hg in YD  = 0.0255 pptv
+
+#SETFIX O3;NO2;CH4;CO;Hg;
+
+// THIS DEFINES THE INITIAL CONDITIONS AND THE LENGTH OF THE MODEL RUN
+#INLINE F90_INIT
+        TSTART = (0*3600)
+        TEND = TSTART + (10*24*3600)
+        DT = 1*60
+        TEMP = 242. ! Kelvin
+        ASA = 3.E-8 !(cm-2 cm-3)
+        !ASA = 1.E-7 !(cm-2 cm-3)
+        AVOL = 1.E-11 !(cm-3 cm-3)
+        PRESSURE = 2.46E19 !(molec. cm-3)
+        RelHum = 85.
+        H_alt = 1000.*100.
+        windspeed = 3. ! m s-1
+        aerosol_loss = 1./(3.*24*3600.) !Lost over three days
+#ENDINLINE
+
+// USE THIS TO DEFINE GLOBAL VARIABLES
+#INLINE F90_GLOBAL
+  REAL(kind=dp) :: PRESSURE                 ! Pressure
+  REAL(kind=dp) :: H_alt, windspeed         ! BL height and wind speed at 10 m
+  REAL(kind=dp) :: ASA, AVOL, aerosol_loss ! Aerosol surface area, volume, loss 
+  REAL(kind=dp) :: J(120), jfactor, jfactor2, factortime  ! Species mass array
+  REAL(kind=dp) :: J1_MAX
+  !! The jfactor is defined according to the O3 cross-section
+  !! Change in the main program in the driver file
+  !!Constants
+  REAL(kind=dp) :: AVOG = 6.023E+23         !Avogadro's constant
+  REAL(kind=dp) :: PI = 3.14                !PI
+  INTEGER :: JDAY                           !Julian Day
+  REAL(kind=dp) :: LATITUDE, SZA, RelHum, Cair  !Latitude AND solar zenith angle
+  INTEGER, PARAMETER :: num_bins=30 !Number of bins for coagulation routine
+  !!Boltzmann constant(kg m^2 s^-2 K^-1 molec^-1)
+  REAL(kind=dp) :: k_boltz = 1.3807D-23, v_rat
+  #ENDINLINE
+
+//USE THIS FOR MAKING ROUTINES TO OPEN AND CLOSE FILES
+
+#INLINE F90_UTIL
+
+    ! Create output file
+    SUBROUTINE InitSaveData_Box ()
+        USE Box_Parameters
+        open(10, file='outputs/Box.csv')
+        
+    END SUBROUTINE InitSaveData_Box  
+
+    !Save Species Names in output file
+    SUBROUTINE SaveSpeciesName_Box ()
+        USE Box_Global
+        USE Box_Monitor
+        INTEGER i
+        
+        WRITE(10,9998) 'TIME', &
+                        (TRIM(SPC_NAMES(LOOKAT(i))),i=1,NLOOKAT), &
+                        'HgII(pg/m3)', 'Hg_dep(kg/m-2/s-1)', 'BrY'	
+        9998 FORMAT(1X,A,102(1x,A))
+    END SUBROUTINE SaveSpeciesName_Box
+    !Save output in output file
+    SUBROUTINE SaveData_Box
+        USE Box_Global
+        USE Box_Monitor
+        INTEGER i
+        REAL(dp) :: HgII,Hg_dep,BrY
+        
+        HgII = C(ind_HgBr) + C(ind_HgBr2) + C(ind_HgBrOH) + C(ind_HgBrCl) &
+        + C(ind_HgBrNO2) + C(ind_HgBrHO2) + C(ind_HgBrO) + C(ind_HgOH) &
+        + C(ind_HgOHOH)+ C(ind_HgOHCl)+ C(ind_HgOHHO2) + C(ind_HgOHNO2) &
+        + C(ind_HgOHO) + C(ind_HgCl) + C(ind_HgCl2) + C(ind_HgClNO2) &
+        + C(ind_HgClHO2) + C(ind_HgClO)    
+         
+        Hg_dep = C(ind_Hg_DryDep) + C(ind_Hg_WetDep) + C(ind_Hg_AerDep)
+        
+        BrY = C(ind_Br) + C(ind_Br2) + C(ind_BrO) + C(ind_HBr) + C(ind_HOBr) &
+        + C(ind_BrNO2) + C(ind_BrONO2) +C(ind_BrNO) +C(ind_BrCl) + C(ind_IBr) 
+               
+        WRITE(10,999) (TIME-TSTART)/3600.D0,  &
+                    (C(LOOKAT(i))/CFACTOR, i=1,NLOOKAT), &
+                    (HgII*200.*1000./(CFACTOR*22.45)), & 
+                    (Hg_dep), &
+                    (BrY/CFACTOR) 
+        999   FORMAT(E24.16,102(1X,E24.16))
+    END SUBROUTINE SaveData_Box 
+#ENDINLINE
+
+
+// THIS GOES INTO THE RATE CONSTANT FILE
+#INLINE F90_RCONST 
+    ! generic reaction rate variables
+    REAL(dp) :: kro2no, kro2ho2, kapho2, kapno, kro2no3, kno3al, kdec
+    REAL(dp) :: krosec, kalkoxy, kalkpxy, kroprim, KCH3O2, K298CH3O2
+    ! variables for calculation of kfpan and kbpan
+    REAL(dp) :: kfpan, kbpan, kc0, kci, krc, fcc, fc, kd0, kdi, krd, fcd, fd
+    ! variables for calculation of organic complex reactions rates
+    REAL(dp) :: k0, ki, kr, nc, M, o2, n2, Pair, H2O, h_fact
+    REAL(dp) :: kmt01, kmt02, kmt03, kmt04, kmt05, kmt06, kmt07, kmt08
+    REAL(dp) :: kmt09, kmt10, kmt11, kmt12, kmt13, kmt14, kmt15, kmt16
+    REAL(dp) :: kmt17, kmt18, k1, k2, k3, k4
+    REAL(dp) :: RK0, RKI, Fcr, ETI, kino, kino2, kiono2, koiooh,koioio
+    REAL(dp) :: koiooio, kti2o4, ktiono2, kbrno2, kbrono2, RO2
+    REAL(dp) :: u_INO2, u_IONO2, u_HI, u_HOI, u_IO, u_BrNO2, u_BrONO2
+    REAL(dp) :: u_HBr, u_HOBr, u_OH, u_HO2, u_CH3O2, u_HNO3, u_N2O5
+    REAL(dp) :: u_NO3, u_NO2, u_HgBr, u_HgBr2, u_HgBrOH, u_HgBrCl,u_HgBrNO2 
+    REAL(dp) :: u_HgBrHO2,u_HgBrO,u_HgOH,u_HgOHOH,u_HgOHCl,u_HgOHNO2,u_HgOHHO2
+    REAL(dp) :: u_HgOHO,u_HgCl,u_HgCl2,u_HgClNO2,u_HgClHO2,u_HgClO 
+    REAL(dp) :: v_HO2, v_H2O2, v_CH3OH, v_CH3OOH, v_C2H5OOH, v_IC3H7OOH
+    REAL(dp) :: v_NC3H7OOH, v_HCHO, v_CH3CHO, v_C2H5CHO, v_C3H7CHO
+    REAL(dp) :: v_HNO3,v_GLYOX, v_Hg, hggamma
+    REAL(dp) :: khgbrno2,khgbrho2,khgclno2,khgclho2
+
+    !Constants being used for calculating rate constants
+    M = Cair
+    o2 = M * 0.2095
+    n2 = M * 0.79
+    Pair = M *1013.25 / 2.46E19
+    h_fact = (AVOG*avol)/(1000.*Cair);
+    !arden-buck
+    H2O = (RelHum/100.)*(1./1.381E-19/(Temp))*(1.0007+Pair*3.46E-6)* &
+          6.1121*exp(17.2694*(Temp-273.15)/(Temp-273.15+238.3))
+    !H2O = 0.146*1E-2*PRESSURE
+    
+    hggamma = 0.1
+    
+    !! Uptake coefficients
+    !Iodine
+    u_INO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.173))**0.5)*0.1*ASA*100.
+    u_IONO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.189))**0.5)*0.1*ASA*100.
+    u_HI = 0.25*(((8.*8.3145*TEMP)/(3.14*0.128))**0.5)*0.1*ASA*100.
+    u_HOI = 0.25*(((8.*8.3145*TEMP)/(3.14*0.144))**0.5)*0.031*ASA*100.
+    u_IO = 0.25*(((8.*8.3145*TEMP)/(3.14*0.143))**0.5)*0.5*ASA*100.
+    !Bromine
+    u_BrNO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.126))**0.5)*0.1*ASA*100.
+    u_BrONO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.142))**0.5)*0.1*ASA*100.
+    u_HBr = 0.25*(((8.*8.3145*TEMP)/(3.14*0.81))**0.5)*0.1*ASA*100.
+    u_HOBr = 0.25*(((8.*8.3145*TEMP)/(3.14*0.097))**0.5)*0.031*ASA*100.
+    !Inorganic
+    u_OH = 0.25*(((8.*8.3145*TEMP)/(3.14*0.017))**0.5)*0.000012* &
+            EXP(1750/TEMP)*ASA*100.
+    u_HO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.033))**0.5)*0.4*ASA*100.
+    u_CH3O2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.047))**0.5)*0.004*ASA*100.
+    u_HNO3 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.063))**0.5)*0.014*ASA*100.
+    u_N2O5 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.108))**0.5)*0.03*ASA*100.
+    u_NO3 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.062))**0.5)*0.003*ASA*100.
+    u_NO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.03))**0.5)*0.0004*ASA*100.
+    
+    !Mercury
+    !Br
+    u_HgBr = 0.25*(((8.*8.3145*TEMP)/(3.14*0.280))**0.5)*hggamma*ASA*100.
+    u_HgBr2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.360))**0.5)*hggamma*ASA*100.
+    u_HgBrOH = 0.25*(((8.*8.3145*TEMP)/(3.14*0.297))**0.5)*hggamma*ASA*100.
+    u_HgBrCl = 0.25*(((8.*8.3145*TEMP)/(3.14*0.315))**0.5)*hggamma*ASA*100.
+    u_HgBrNO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.326))**0.5)*hggamma*ASA*100.
+    u_HgBrHO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.303))**0.5)*hggamma*ASA*100.
+	u_HgBrO = 0.25*(((8.*8.3145*TEMP)/(3.14*0.296))**0.5)*hggamma*ASA*100.
+	!OH
+    u_HgOH = 0.25*(((8.*8.3145*TEMP)/(3.14*0.217))**0.5)*hggamma*ASA*100.
+    u_HgOHOH = 0.25*(((8.*8.3145*TEMP)/(3.14*0.234))**0.5)*hggamma*ASA*100.
+	u_HgOHCl = 0.25*(((8.*8.3145*TEMP)/(3.14*0.252))**0.5)*hggamma*ASA*100.
+    u_HgOHNO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.263))**0.5)*hggamma*ASA*100.
+    u_HgOHHO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.250))**0.5)*hggamma*ASA*100.
+    u_HgOHO = 0.25*(((8.*8.3145*TEMP)/(3.14*0.233))**0.5)*hggamma*ASA*100.
+    !Cl
+    u_HgCl = 0.25*(((8.*8.3145*TEMP)/(3.14*0.235))**0.5)*hggamma*ASA*100.
+    u_HgCl2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.270))**0.5)*hggamma*ASA*100.
+    u_HgClNO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.281))**0.5)*hggamma*ASA*100.
+    u_HgClHO2 = 0.25*(((8.*8.3145*TEMP)/(3.14*0.268))**0.5)*hggamma*ASA*100.
+    u_HgClO = 0.25*(((8.*8.3145*TEMP)/(3.14*0.251))**0.5)*hggamma*ASA*100.    
+    
+    !! vertical deposition to the surface in cm/s
+    !Inorganic
+    v_HO2 = 159.3/H_alt
+    v_H2O2 = 1./H_alt
+    v_CH3OH = 0.09/H_alt
+    v_CH3OOH = 0.9/H_alt
+    v_C2H5OOH = 0.9/H_alt
+    v_IC3H7OOH = 0.9/H_alt
+    v_NC3H7OOH = 0.9/H_alt
+    v_HCHO = 0.33/H_alt
+    v_GLYOX = 3./H_alt
+    v_CH3CHO = 0.33/H_alt
+    v_C2H5CHO = 0.33/H_alt
+    v_C3H7CHO = 0.33/H_alt
+    v_HNO3 = 0.8/H_alt
+    
+    v_Hg = 0.46/H_alt
+
+     
+    !!Simple rate constants
+    ! kro2no : ro2      + no      = ro      + no2
+    !        : ro2      + no      = rono2
+    KRO2NO = 2.7D-12*EXP(360/TEMP)    
+    ! kro2ho2: ro2      + ho2     = rooh    + o2
+    KRO2HO2 = 2.91D-13*EXP(1300/TEMP)
+    ! kapho2 : rcoo2    + ho2     = products
+    KAPHO2 = 5.2D-13*EXP(980/TEMP)
+    ! kapno  : rcoo2    + no      = products
+    KAPNO = 7.5D-12*EXP(290/TEMP)
+    ! kro2no3: ro2      + no3     = products
+    KRO2NO3 = 2.3D-12
+    ! kno3al : no3      + rcho    = rcoo2   + hno3
+    KNO3AL = 1.4D-12*EXP(-1860/TEMP)
+    ! kdec   : ro                 = products
+    KDEC = 1.00D+06
+    KROPRIM = 2.50D-14*EXP(-300/TEMP)
+    KROSEC = 2.50D-14*EXP(-300/TEMP)
+    KCH3O2 = 1.03D-13*EXP(365/TEMP)
+    K298CH3O2 = 3.5D-13
+
+    !! Complex rate constants
+    ! kfpan kbpan: formation and decomposition of pan
+    ! iupac 1997
+    kc0     = 2.70d-28*m*(temp/298.0)**(-7.1)
+    kci     = 1.21d-11*(temp/298.0)**(-0.9)
+    krc     = kc0/kci
+    fcc     = 0.30
+    fc      = 10**(dlog10(fcc)/(1+(dlog10(krc))**2))
+    kfpan   = (kc0*kci)*fc/(kc0+kci)
+
+    kd0     = 4.90d-03*m*EXP(-12100.0/temp)
+    kdi     = 5.40d+16*EXP(-13830.0/temp)
+    krd     = kd0/kdi
+    fcd     = 0.30
+    fd      = 10**(dlog10(fcd)/(1+(dlog10(krd))**2))
+    kbpan   = (kd0*kdi)*fd/(kd0+kdi)
+
+    ! kmt01  : o        + no      = no2
+    ! iupac 1997, 2006 gives Fc=0.85, otherwise the same
+    k0     = 1.00d-31*m*(temp/300.0)**(-1.6)
+    ki     = 3.00d-11*(temp/300.0)**(0.3)
+    kr     = k0/ki
+    fc     = 0.85
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt01   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt02  : o        + no2     = no3
+    ! iupac 2006
+    k0     = 1.30d-31*m*(temp/300.0)**(-1.5)
+    ki     = 2.30d-11*(temp/300.0)**(0.24)
+    kr     = k0/ki
+    fc     = 0.6
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt02   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt03  : no2      + no3     = n2o5
+    ! iupac 2006
+    k0     = 3.60d-30*m*(temp/300.0)**(-4.1)
+    ki     = 1.90d-12*(temp/300.0)**(0.2)
+    kr     = k0/ki
+    fc     = 0.35
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt03   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt04  : n2o5               = no2     + no3
+    ! iupac 2006
+    k0     = 1.30d-03*m*(temp/300.0)**(-3.5)*EXP(-11000.0/temp)
+    ki     = 9.70d+14*(temp/300.0)**(0.1)*EXP(-11080.0/temp)
+    kr     = k0/ki
+    fc     = 0.35
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt04   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt05  : oh       + co(+o2) = ho2     + co2
+    ! iupac 2006
+    kmt05  = 1.44d-13*(1 + m/4.2d19)
+
+    ! kmt06  : ho2      + ho2     = h2o2    + o2
+    ! water enhancement factor
+    ! iupac 2001
+    kmt06  = 1 + (1.40d-21*EXP(2200.0/temp)*h2o)
+
+    ! kmt07  : oh       + no      = hono
+    ! iupac 2006
+    k0     = 7.40d-31*m*(temp/300.0)**(-2.4)
+    ki     = 3.30d-11*(temp/300.0)**(-0.3)
+    kr     = k0/ki
+    fc     = EXP(-temp/1420)
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt07   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt08  : oh       + no2     = hno3
+    ! iupac 2006
+    k0     = 3.30d-30*m*(temp/300.0)**(-3.0)
+    ki     = 4.10d-11
+    kr     = k0/ki
+    fc     = 0.4
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt08   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt09  : ho2      + no2     = ho2no2
+    ! iupac 2001
+    k0     = 1.80d-31*m*(temp/300.0)**(-3.2)
+    ki     = 4.70d-12
+    kr     = k0/ki
+    fc     = 0.6
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt09   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt10  : ho2no2             = ho2     + no2
+    ! iupac 2001
+    k0     = 4.10d-05*M*EXP(-10650.0/temp)
+    ki     = 4.80d+15*EXP(-11170.0/temp)
+    kr     = k0/ki
+    fc     = 0.6
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt10   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt11  : oh       + hno3    = h2o     + no3
+    ! iupac 2006
+    k1     = 2.40d-14*EXP(460.0/temp)
+    k3     = 6.50d-34*EXP(1335.0/temp)
+    k4     = 2.70d-17*EXP(2199.0/temp)
+    k2     = (k3*M)/(1+(k3*M/k4))
+    kmt11  = k1 + k2
+
+    ! kmt12  : oh       + so2    = h2so4
+    ! kmt12 iupac 2006
+    k0 = 4.50d-31*M*((temp/300.0)**(-3.9))
+    ki = 1.30d-12*((temp/300.0)**(-0.7))
+    kr = k0/ki
+    fc = 0.525
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt12   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt13  : ch3o2    + no2     = ch3o2no2
+    ! iupac 2006
+    k0     = 2.50d-30*M*((temp/300.0)**(-5.5))
+    ki     = 1.80d-11
+    kr     = k0/ki
+    fc     = 0.36
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt13   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt14  : ch3o2no2           = ch3o2   + no2
+    ! iupac 2006
+    k0     = 9.00d-05*EXP(-9690.0/temp)*m
+    ki     = 1.10d+16*EXP(-10560.0/temp)
+    kr     = k0/ki
+    fc     = 0.6
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt14   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt15 iupac 2006
+    k0     = 8.60d-29*((temp/300.0)**(-3.1))*m
+    ki     = 9.00d-12*((temp/300.0)**(-0.85))
+    kr     = k0/ki
+    fc     =0.48
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt15   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt16  :  oh  +  c3h6
+    ! iupac 2006
+    k0     = 8.00d-27*((temp/300.0)**(-3.5))*m
+    ki     = 3.00d-11*((temp/300.0)**(-1.0))
+    kr     = k0/ki
+    fc     = 0.5
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt16   = (k0*ki)*fcc/(k0+ki)
+
+    ! kmt17 iupac 2006
+    k0    = 5.00d-30*((temp/300.0)**(-1.5))*m
+    ki    = 1.00d-12
+    kr    = k0/ki
+    fc    = 0.17*EXP(-51/TEMP)+EXP(-TEMP/204)
+    nc     = 0.75-1.27*(dlog10(fc))
+    fcc    = 10**(dlog10(fc)/(1+(dlog10(kr)/nc)**2))
+    kmt17   = (k0*ki)*fcc/(k0+ki)
+    
+    !! SOx22_HO_CH3SCH3
+    KMT18 = 9.5D-39*O2*EXP(5270/TEMP)/(1+7.5D-29*O2*EXP(5610/TEMP))
+
+    !! Iodine complex reactions 
+    ! kin0      I + NO = INO
+    RK0 = M*1.8E-32*((TEMP/300)**(-1))
+    RKI = 1.7E-11*((TEMP/300)**0)
+    Fcr = 0.6
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    kino = (RK0/(1+RK0/RKI))*(Fcr**ETI)
+    
+    ! kino2      I + NO2 = INO2
+    RK0 = M*3.0E-31*((TEMP/300)**(-1))
+    RKI = 6.6E-11*((TEMP/300)**0)
+    Fcr = 0.6
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    kino2 = (RK0/(1+RK0/RKI))*(Fcr**ETI)
+
+    ! kiono2      IO + NO2 = IONO2
+    RK0 = M*6.5E-31*((TEMP/300)**(-3.5))
+    RKI = 7.6E-12*((TEMP/300)**(-1.5))
+    Fcr = 0.6
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    kiono2 = (RK0/(1+RK0/RKI))*(Fcr**ETI)
+    
+    ! koiooh    OIO + OH = HOI + O2
+    RK0 = M*1.5E-27*((TEMP/300)**(-3.93))
+    RKI = 5.5E-10*exp(46/temp)*((TEMP/300)**0)
+    Fcr = 0.3
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    koiooh = (RK0/(1+RK0/RKI))*(Fcr**ETI)
+    
+    !koioio oio + io = i2o3
+    koioio = (4.687E-10-1.3855E-5*exp(-Pair*0.75/1.62265)+ &
+            5.51868E-10*exp(-Pair*0.75/199.328))* &
+            exp(-(0.00331+0.00514*exp(-Pair*0.75/325.68711)+ &
+            0.00444*exp(-Pair*0.75/40.81609))*Temp)
+            
+    !koiooio oio + oio = i2o4
+    koiooio = (1.1659E-9-7.79644E-10*exp(-Pair*0.75/22.09281)+ &
+            1.03779E-9*exp(-Pair*0.75/568.15381))* &
+            exp(-(0.00813+0.00382*exp(-Pair*0.75/45.57591)+ &
+            0.00643*exp(-Pair*0.75/417.95061))*Temp)
+    
+    !kti2o4   I2O4 = OIO + OIO
+    kti2o4 = (-1.92626E14+4.67414E13*(Pair*0.75)-3.68651E8* &
+            (Pair*0.75)**2-3.09109E6*(Pair*0.75)**3)* & 
+            exp((-12302.15294+252.78367*exp(-Pair*0.75/46.12733)+ &
+            437.62868*exp(-Pair*0.75/428.4413))/TEMP)
+    
+    ! ktiono2   iono2 = io + no2
+    ktiono2 = (-2.63544E13+4.32845E12*(Pair*0.75)+3.73758E8* &
+            (Pair*0.75)**2-628468.76313*(Pair*0.75)**3)* &
+            exp((-13847.85015+240.34465*exp(-Pair*0.75/49.27141)+ &
+            451.35864*exp(-Pair*0.75/436.87605))/TEMP)
+            
+    !! Bromine complex reactions
+    
+    !kbrno2 Br + NO2 + M = BrNO2
+    RK0 = M*4.42E-31*(TEMP/300)**(-2.4)
+    RKI = 2.7E-11*((TEMP/300)**(0))
+    Fcr = 0.6
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    kbrno2 = (RK0/(1+RK0/RKI))*(Fcr**ETI)
+
+    !kbrono2   BrO + NO2 = BrONO2
+    RK0 = M*5.2E-31*(TEMP/300)**(-3.2)
+    RKI = 6.9E-12*((TEMP/300)**(-2.9))
+    Fcr = 0.6
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    kbrono2 = (RK0/(1+RK0/RKI))*(Fcr**ETI)
+    
+    !! Mercury complex reactions
+    
+    !khgbrno2 Hgbr + NO2 + M = HgBrNO2
+    RK0 = M*3.69E-17*(TEMP)**(-4.75)
+    RKI = 1.26e-5*(TEMP)**(-2.04)
+    Fcr = 0.6
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    khgbrno2 = (RK0/(1+RK0/RKI))*(Fcr**ETI)
+
+    !khgbrho2   HgBr + HO2 = HgBrHO2
+    RK0 = M*7.68E-19*(TEMP)**(-4.25)
+    RKI = 1.24e-4*(TEMP)**(-2.53)
+    Fcr = 0.6
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    khgbrho2 = (RK0/(1+RK0/RKI))*(Fcr**ETI)    
+    
+	!khgclno2   HgCl + NO2 = HgClNO2
+    RK0     = M*4.3E-30*(TEMP/298)**(-5.9)
+    RKI     = 1.2E-10*(temp/298.0)**(-1.9)
+    Fcr     = 0.60
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    khgclno2 = (RK0/(1+RK0/RKI))*(Fcr**ETI)  
+
+	!khgclho2   HgCl + HO2 = HgClHO2
+    RK0     = M*4.3E-30*(TEMP/298)**(-5.9)
+    RKI     = 6.9E-11*(temp/298.0)**(-2.4)
+    Fcr     = 0.60
+    ETI = (1+(dLog10(RK0/RKI))**2)**(-1)
+    khgclno2 = (RK0/(1+RK0/RKI))*(Fcr**ETI)  
+    
+    
+    RO2 = C(ind_CH3O2)
+    
+#ENDINLINE
