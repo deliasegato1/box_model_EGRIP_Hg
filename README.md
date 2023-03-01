@@ -16,7 +16,6 @@ cd $KPP_HOME
 make clean
 make distclean
 ```
-
 4) Create the kpp executable with:
 ```
 make
@@ -25,4 +24,12 @@ make
 6) Run the model:
 ```
 kpp box.kpp
+```
+7) Compile and run the Fortran90 code:
+```
+make -fMakefile_box
+```
+8) Run the executable file
+```
+./box.exe
 ```
