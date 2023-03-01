@@ -7,5 +7,11 @@ The box model is run using the KPP (Kinetic PreProcessor) model publicly availab
 
 Instructions using Ubuntu terminal:
 1) Install KPP following the documentation instructions
-2) cd $KPP_HOME
-3) 
+2) Go to KPP directory
+'''
+cd $KPP_HOME
+'''
+4) make distclean
+5) make
+6) change directory to with cd
+7) 
