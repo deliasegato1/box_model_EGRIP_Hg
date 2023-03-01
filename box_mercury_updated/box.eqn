@@ -1,0 +1,418 @@
+#EQUATIONS { Halogens }
+
+//// The number of the reaction in this file does not matter because they are renumbered
+//// by kpp in any case. To comment out a reaction use C syntax '//'
+
+//// ****************
+////REMEMBER TO CHANGE RO2 IN THE ONEDIM.DEF ACCORDING TO THE SPECIES BEING USED
+//// ****************
+
+////Fluxes according to jfactor
+<R1> I2_flux = I2 +25*HOI              : (1./H_alt) ;
+
+// Iodine photolysis reactions
+<R1> I2 + hv = I + I            : J(61) ;
+<R2> IO + hv = I + O            : J(62) ;
+<R3> OIO + hv = I               : J(63) ;
+<R4> I2O2 + hv = IO + IO        : J(64) ;
+<R5> I2O3 + hv = IO + OIO       : J(65) ;
+<R6> I2O4 + hv = OIO + OIO      : J(66) ;
+<R7> I2O5 + hv = IO + OIO       : J(67) ;
+<R8> HOI + hv = I + OH          : J(68) ;
+<R9> HI + hv = I + H            : J(69) ;
+<R10> INO + hv = I + NO         : J(70) ;
+<R10> INO2 + hv = 0.5*I + 0.5*NO2 + 0.5*NO + 0.5*IO : J(71) ;
+<R11> IONO2 + hv = I + NO3      : J(72) ;
+<R12> IBr + hv = I + Br         : J(73) ;
+<R13> ICl + hv = I + Cl         : J(74) ;
+<R14> CH3I + hv =  I            : J(75) ;
+<R15> CH2I2 + hv = I + I        : J(76) ;
+<R16> CH2ICl + hv = Cl + I      : J(77) ;
+<R17> CH2IBr + hv = Br + I      : J(78) ;
+<R18> C2H5I + hv = I            : J(79) ;
+<R19> nC3H7I + hv = I           : J(80) ;
+<R20> iC3H7I + hv = I           : J(81) ;
+// Iodine bimolecular reactions         
+<R21> I2 + O3 = IO + OIO        : (7.74E-14*Exp(-2939.62/TEMP)) ;
+<R22> I + O3 = IO               : (2.1E-11*Exp(-830/TEMP)) ;
+<R23> IO + O3 = OIO             : 3.60E-16 ;
+<R24> I2 + O = IO + I           : 1.25E-10 ;
+<R25> IO + O = I                : 1.4E-10 ;
+<R26> IO + NO = I + NO2         : (7.15E-12*Exp(300/TEMP)) ;
+<R27> OIO + NO = IO + NO2       : (1.1E-12*Exp(542/TEMP)) ;
+<R28> I2 + NO3 = I + IONO2       : 1.50E-12 ;
+<R29> I + NO3 = NO2 + IO        : 1.00E-10 ;
+<R30> IO + NO3 = OIO + NO2      : 9.00E-12 ;
+<R31> HI + NO3 = I + HNO3       : (1.3E-12*Exp(-1830/TEMP)) ;
+<R32> I2 + OH = HOI + I         : 1.80E-10 ;
+<R33> IO + OH = HO2 + I         : 1.000E-10 ;
+<R34> HI + OH = I               : (1.6E-11*Exp(440/TEMP)) ;
+<R35> HOI + OH = IO             : 2.00E-13 ;
+<R36> I + HO2 = HI              : (1.5E-11*Exp(-1090/TEMP)) ;
+<R37> IO + HO2 = HOI            : (1.4E-11*Exp(540/TEMP)) ;
+<R38> IO + IO = OIO + I         : 2.13E-11*Exp(180/TEMP)*(1+Exp(-Pair/191.42)) ;
+<R39> IO + IO = I2O2            : 3.27E-11*Exp(180/TEMP)*(1-0.65*Exp(-Pair/191.42)) ;
+<R40> IO + OIO  = I2O3          : koioio ;
+<R41> OIO + OIO  = I2O4         : koiooio ;
+<R42> I2O2 + O3 = I2O3            : 6.00E-13 ;
+<R43> I2O3 + O3 = I2O4            : 6.00E-13 ;
+//<R44> I2O4 + O3 = I2O5            : 6.00E-13 ;
+<R45> IO + DMS = I + DMSO       : (3.2E-13*Exp(-925/TEMP)) ;
+<R46> INO + INO = I2 + 2NO      : (8.4E-11*Exp(-2620/TEMP)) ;
+<R47> INO2 + INO2 = I2 + 2NO2   : (4.7E-13*Exp(-1670/TEMP)) ;
+<R48> I + IONO2 = I2 + NO3      : 9.1E-11*exp(-146/Temp) ;
+
+//LOSS of IODINE IF NO PARTCICLES are considered
+//<R44> IO + I2O4 = DUMMY         : 1.20E-9 ;
+//<R44> OIO + I2O4 = DUMMY        : 1.20E-9 ;
+//<R44> I2O2 + I2O4 = DUMMY       : 1.20E-9 ;
+//<R44> I2O4 + I2O3 = DUMMY       : 1.20E-9 ;
+//<R44> I2O3 + I2O3 = DUMMY       : 1.20E-9 ;
+//<R44> I2O4 + I2O4 = DUMMY       : 1.20E-9 ;
+
+// Iodine thermal decomposition
+<R49> I2O2  = OIO + I           : 2.5E14*exp(-9770/TEMP) ;
+<R50> I2O2  = IO + IO           : 1.00E12*Exp(-9770/TEMP) ;
+<R51> I2O4  = OIO + OIO         : kti2o4 ;
+<R52> IONO2 = IO + NO2          : ktiono2 ;
+<R53> INO2 = I + NO2            : (2.4/0.005)*2.07E+15*1.*Exp(13670/TEMP) ;
+// Iodine termoecular reactions         
+<R54> I + NO = INO              : kino ;
+<R55> IO + NO2 = IONO2          : kiono2 ;
+<R56> I + NO2 = INO2            : kino2 ;
+<R57> OIO + OH = HOI            : koiooh ;
+//  Iodine uptake reactions 
+//<R58> HOI = 0.985*ICl+0.0147*IBr+9.85E-5*I2 : u_HOI ;
+//<R59> HI = 0.985*ICl+0.0147*IBr+9.85E-5*I2  : u_HI ;
+//<R60> INO2 = 0.985*ICl+0.0147*IBr+9.85E-5*I2 + NO2  : u_INO2 ;
+//<R61> IONO2 = 0.985*ICl+0.0147*IBr+9.85E-5*I2 + NO2 : u_IONO2 ;
+<R58> HOI = 0.5*I2              : u_HOI ;
+<R59> HI = 0.5*I2               : u_HI ;
+<R60> INO2 = 0.5*I2             : u_INO2 ;
+<R61> IONO2 = 0.5*I2            : u_IONO2 ;
+<R61> IO = 0.5*I2               : u_IO ;
+
+// Bromine photolysis reactions
+<R15> Br2 + hv = Br + Br        : J(82) ;
+<R15> BrCl + hv = Br + Cl        : J(82)*0.2 ;
+<R16> BrO + hv = Br + O3        : J(83) ;
+<R17> BrONO2 + hv = 0.3*Br + 0.3*NO3 + 0.7*NO2 + 0.7*BrO    : J(84) ;
+<R18> BrNO2 + hv = 0.5*Br + 0.5*NO2 + 0.5*NO + 0.5*BrO      : J(85) ;
+<R19> HOBr + hv = Br + OH       : J(86) ;
+//  Bromine bimolecular reactions
+<R21> Br + O3 = BrO             : (1.7E-11*Exp(-800/TEMP)) ;
+<R22> HBr + OH = Br             : 1.10E-11 ;
+<R23> Br + HO2 = HBr            : 1.5e-11*Exp(-600/TEMP) ;//(4.5E-12*Exp(500/TEMP)) ;
+<R24> HCHO + Br = HBr + HO2 + CO: (7.7E-12*Exp(-580/TEMP)) ;
+<R25> Br + CH3CHO = HBr + CH3CO : (1.8E-11*Exp(-460/TEMP)) ;
+<R26> BrO + HO2 = HOBr          : (3.4E-12*Exp(545/TEMP)) ;
+<R27> BrO + NO = Br + NO2       : (8.8E-12*Exp(260/TEMP)) ;
+<R28> BrO + DMS = Br + DMSO     : (1.5E-14*Exp(850/TEMP)) ;
+<R29> BrO + BrO = 2Br           : (2.4E-12*Exp(40/TEMP)) ;
+<R30> BrO + BrO = Br2           : (3.4E-14*Exp(860/TEMP)) ;
+<R31> BrONO2 = BrO + NO2        : (2.8E-13*Exp(-12360/TEMP)) ;
+<R32> OH + Br2 = HOBr + Br      : (1.9E-11*Exp(240/TEMP)) ;
+<R33> Br + BrONO2 = Br2 + NO3   : 4.90E-11 ;
+<R35> BrONO2 + NO = BrNO + NO3  : 3.00E-19 ;
+<R36> BrNO + BrONO2 = Br2 + 2NO2: 1.00E-16 ;
+<R37> HOBr + O = BrO + OH       : 1.2E-10 * Exp(-430 / TEMP) ;
+<R38> BrCl + OH = Br + HOCl     : 1.50E-12 ;
+// Bromine termolecular reactions           
+<R39> Br + NO2 = BrNO2          : kbrno2 ;
+<R40> BrO + NO2  = BrONO2       : kbrono2 ;
+//  Bromine uptake reactions
+<R41> HOBr = 0.5*Br2            : u_HOBr ;
+<R42> HBr = 0.5*Br2             : u_HBr ;
+<R43> BrNO2 = 0.5*Br2           : u_BrNO2 ;
+<R44> BrONO2 = 0.5*Br2          : u_BrONO2 ;
+
+// Inter halogen bimolecular reactions
+<R52> IO + ClO = I + OClO       : (2.585E-12*Exp(280/TEMP)) ;
+<R52> IO + ClO = I + Cl         : (1.175E-12*Exp(280/TEMP)) ;
+<R52> IO + ClO = ICl            : (0.94E-12*Exp(280/TEMP)) ;
+<R52> IO + Br = I + BrO         : 2.49E-11 ;
+<R34> BrO + IO = Br + I         : (0.3E-11*Exp(510/TEMP)) ;
+<R34> BrO + IO = Br + OIO       : (1.2E-11*Exp(510/TEMP)) ;
+
+// halogen aerosol reactions
+// <R44> Im_a + Ip_a = I2     : 1.E-9 ;
+// <R44> Im_a + Brp_a = IBr   : 1.E-9 ;
+// <R44> Brm_a + Ip_a = IBr   : 1.E-9 ;
+// <R44> Clm_a + Ip_a = ICl   : 1.E-9 ;
+// <R44> Brm_a + Brp_a = Br2  : 1.E-9 ;
+// <R44> Clm_a + Brp_a = BrCl : 1.E-9 ;
+
+//// Mercury gas phased scheme from Saiz Lopez et al,PNAS,2021
+//bromine reactions
+<R35> Hg + Br = HgBr            	: 1.5E-32*EXP(TEMP/298)**(-1.86)*M ; 
+<R36> HgBr = Hg + Br            	: 1.6E-9*Exp(-7801/TEMP)*M ; 
+<R43> HgBr + Br = Hg + Br2      	: 3.9e-11;
+<R43> HgBr + Br = HgBr2         	: 2.5E-10*(TEMP/298)**(0.57);
+<R43> HgBr + OH = HgBrOH        	: 2.5E-10*(TEMP/298)**(0.57);
+<R43> HgBr + Cl = HgBrCl        	: 3.0E-11;
+<R43> HgBr + NO2 = HgBrNO2 			: khgbrno2;
+<R43> HgBr + HO2 = HgBrHO2 			: khgbrho2;
+<R36> HgBr + O3 = HgBrO         	: 1e-10 ;
+<R36> HgBrO + CH4 = HgBrOH + CH3O2  : 2.63E-13 ;
+<R36> HgBrO + CO = HgBr + CO2  		: 6.0E-11*EXP(-550/TEMP) ;
+//OH reactions
+<R46> Hg + OH = HgOH            	: 3.34E-33*EXP(43/TEMP)*M ;
+<R46> HgOH = Hg + OH            	: 1.22E-9*EXP(-5720/TEMP)*M ;
+<R46> HgOH + Br = HgBrOH        	: 3.0e-11 ;
+<R46> HgOH + OH = HgOHOH        	: 3.0e-11 ;
+<R46> HgOH + Cl = HgOHCl        	: 3.0e-11 ;
+<R43> HgOH + NO2 = HgOHNO2 			:khgbrno2;
+<R43> HgOH + HO2 = HgOHHO2 			:khgbrho2;
+<R36> HgOH + O3 = HgOHO         	: 3e-11 ;
+<R36> HgOHO + CH4 = HgOHOH + CH3O2  : 4.1E-12*EXP(-856/TEMP) ;
+<R36> HgOHO + CO = HgOH + CO2  		: 6.0E-11*EXP(-550/TEMP) ;
+//chlorine reactions
+<R35> Hg + Cl = HgCl            	: 2.25E-33*EXP(680/TEMP)*M ; 
+<R46> HgCl + Cl = HgCl2         	: 3.0e-11 ;
+<R46> HgCl + Br = HgBrCl        	: 3.0e-11 ;
+<R46> HgCl + OH = HgOHCl        	: 3.0e-11 ;
+<R43> HgCl + NO2 = HgClNO2 			:khgclno2;
+<R43> HgCl + HO2 = HgClHO2 			:khgclho2;
+<R36> HgCl + O3 = HgClO         	: 3e-11 ;
+<R36> HgClO + CH4 = HgOHCl + CH3O2  : 4.1E-12*EXP(-856/TEMP) ;
+<R36> HgClO + CO = HgCl + CO2  		: 6.0E-11*EXP(-550/TEMP) ;
+
+// Mercury photolysis rates
+//bromine
+<R36> HgBr + hv = Hg + Br            									: J(90) ;
+<R36> HgBrO + hv = HgO + Br            									: J(98) ;
+<R36> HgBr2 + hv = 0.6*HgBr + 1.4*Br + 0.4*Hg         					: J(95) ;
+<R36> HgBrOH + hv = 0.35*HgOH + 0.85*Br + 0.5*Hg + 0.65*OH + 0.15*HgBr 	: J(97) ;
+<R36> HgBrCl + hv = 0.6*HgBr + Cl +0.4*Br + 0.4*Hg    					: J(95) ;
+<R36> HgBrNO2 + hv = 0.9*HgBrO + 0.1*HgBr + 0.1*NO2 + 0.9*NO			: J(100) ;
+<R36> HgBrHO2 + hv = 0.31*HgBROH +0.66*Hg + 0.66*Br + 0.69*HO2 + 0.03*HgBr : J(96) ;
+//OH
+<R36> HgO + hv = Hg + O												 	: J(99) ;
+<R36> HgOH + hv = Hg + OH												: J(91) ;
+<R36> HgOHOH + hv = 0.35*HgOH + 0.85*OH + 0.5*Hg + 0.65*OH + 0.15*HgOH 	: J(97) ;
+<R36> HgOHCl + hv = 0.35*HgOH + 0.85*Cl + 0.5*Hg + 0.65*OH + 0.15*HgCl 	: J(107) ;
+<R36> HgOHNO2 + hv = HgOH + NO2      : J(100) ;
+<R36> HgOHHO2 + hv = HgOH + HO2      : J(96) ;
+//Cl
+<R36> HgCl + hv = Hg + Cl            									: J(93) ;
+<R36> HgClO + hv = HgO + Cl            									: J(108) ;
+<R36> HgCl2 + hv = 0.6*HgCl + 1.4*Cl + 0.4*Hg         					: J(94) ;
+<R36> HgClNO2 + hv = 0.9*HgClO + 0.1*HgCl + 0.1*NO2 + 0.9*NO			: J(100) ;
+<R36> HgClHO2 + hv = 0.31*HgOHCl +0.66*Hg + 0.66*Cl + 0.69*HO2 + 0.03*HgCl : J(96) ;
+
+//// Mercury uptake reactions and henry's forward
+//bromine
+<R48> HgBr = HgBr_aq       	: u_HgBr;
+<R48> HgBr2 = HgBr2_aq     	: u_HgBr2;
+<R48> HgBrOH = HgBrOH_aq   	: u_HgBrOH;
+<R48> HgBrCl = HgBrCl_aq   	: u_HgBrCl;
+<R48> HgBrNO2 = HgBrNO2_aq 	: u_HgBrNO2;
+<R48> HgBrHO2 = HgBrHO2_aq 	: u_HgBrHO2;
+<R48> HgBrO = HgBrO_aq 		: u_HgBrO;
+//OH
+<R48> HgOH = HgOH_aq 		: u_HgOH;
+<R48> HgOHOH = HgOHOH_aq 	: u_HgOHOH;
+<R48> HgOHCl = HgOHCl_aq 	: u_HgOHCl;
+<R48> HgOHNO2 = HgOHNO2_aq 	: u_HgOHNO2;
+<R48> HgOHHO2 = HgOHHO2_aq 	: u_HgOHHO2;
+<R48> HgOHO = HgOHO_aq 		: u_HgOHO;
+//Cl
+<R48> HgCl = HgCl_aq 		: u_HgCl;
+<R48> HgCl2 = HgCl2_aq 		: u_HgCl2;
+<R48> HgClNO2 = HgClNO2_aq 	: u_HgClNO2;
+<R48> HgClHO2 = HgClHO2_aq 	: u_HgClHO2;
+<R48> HgClO = HgClO_aq 		: u_HgClO;
+
+//// Mercury uptake reactions and henry's backward
+//bromine
+<R48> HgBr_aq = HgBr        	: u_HgBr/(1.4E6*24.48);
+<R48> HgBr2_aq = HgBr2     		: u_HgBr2/(1.4E6*24.48);
+<R48> HgBrOH_aq = HgBrOH   		: u_HgBrOH/(1.4E6*24.48);
+<R48> HgBrCl_aq = HgBrCl   		: u_HgBrCl/(1.4E6*24.48);
+<R48> HgBrNO2_aq = HgBrNO2 		: u_HgBrNO2/(1.4E6*24.48);
+<R48> HgBrHO2_aq = HgBrHO2 		: u_HgBrHO2/(1.4E6*24.48);
+<R48> HgBrO_aq = HgBrO 			: u_HgBrO/(1.4E6*24.48);
+//OH
+<R48> HgOH_aq = HgOH 			: u_HgOH/(1.4E6*24.48);
+<R48> HgOHOH_aq = HgOHOH 		: u_HgOHOH/(1.4E6*24.48);
+<R48> HgOHCl_aq = HgOHCl 		: u_HgOHCl/(1.4E6*24.48);
+<R48> HgOHNO2_aq = HgOHNO2 		: u_HgOHNO2/(1.4E6*24.48);
+<R48> HgOHHO2_aq = HgOHHO2 		: u_HgOHHO2/(1.4E6*24.48);
+<R48> HgOHO_aq = HgOHO 			: u_HgOHO/(1.4E6*24.48);
+//Cl
+<R48> HgCl_aq = HgCl 			: u_HgCl/(1.4E6*24.48);
+<R48> HgCl2_aq = HgCl2 			: u_HgCl2/(1.4E6*24.48);
+<R48> HgClNO2_aq = HgClNO2 		: u_HgClNO2/(1.4E6*24.48);
+<R48> HgClHO2_aq = HgClHO2 		: u_HgClHO2/(1.4E6*24.48);
+<R48> HgClO_aq = HgClO 			: u_HgClO/(1.4E6*24.48);
+
+//// Hg henry's back reactions - henry's constant (denominator) in M atm-1
+//// Use this to push everything back into the gas phase if you want
+//<R48> HgBr_aq = HgBr        	: 1.;
+//<R48> HgBr2_aq = HgBr2     	: 1.;
+//<R48> HgBrOH_aq = HgBrOH   	: 1.;
+//<R48> HgBrNO2_aq = HgBrNO2 	: 1.;
+//<R48> HgBrHO2_aq = HgBrHO2 	: 1.;
+//<R48> HgOH_aq = HgOH 			: 1.;
+//<R48> HgOHNO2_aq = HgOHNO2 	: 1.;
+//<R48> HgOHHO2_aq = HgOHHO2 	: 1.;
+//<R48> HgBrO_aq = HgBrO 		: 1.;
+
+////// Mercury dry depoistion reactions
+//bromine
+<R48> HgBr = Hg_DryDep       	: v_Hg;
+<R48> HgBr2 = Hg_DryDep     	: v_Hg;
+<R48> HgBrOH = Hg_DryDep   		: v_Hg;
+<R48> HgBrCl = Hg_DryDep   		: v_Hg;
+<R48> HgBrNO2 = Hg_DryDep 		: v_Hg;
+<R48> HgBrHO2 = Hg_DryDep 		: v_Hg;
+<R48> HgBrO = Hg_DryDep 		: v_Hg;
+//OH
+<R48> HgOH = Hg_DryDep 			: v_Hg;
+<R48> HgOHOH = Hg_DryDep 		: v_Hg;
+<R48> HgOHCl = Hg_DryDep 		: v_Hg;
+<R48> HgOHNO2 = Hg_DryDep 		: v_Hg;
+<R48> HgOHHO2 = Hg_DryDep 		: v_Hg;
+<R48> HgOHO = Hg_DryDep 		: v_Hg;
+//Cl
+<R48> HgCl = Hg_DryDep 			: v_Hg;
+<R48> HgCl2 = Hg_DryDep 		: v_Hg;
+<R48> HgClNO2 = Hg_DryDep 		: v_Hg;
+<R48> HgClHO2 = Hg_DryDep 		: v_Hg;
+<R48> HgClO = Hg_DryDep 		: v_Hg;
+
+
+////// Mercury wet depoistion reactions -using rate from Saiz-Lopez,PNAS,2021
+//bromine
+<R48> HgBr = Hg_WetDep       	: 1.15e-5;
+<R48> HgBr2 = Hg_WetDep     	: 1.15e-5;
+<R48> HgBrOH = Hg_WetDep   		: 1.15e-5;
+<R48> HgBrCl = Hg_WetDep   		: 1.15e-5;
+<R48> HgBrNO2 = Hg_WetDep 		: 1.15e-5;
+<R48> HgBrHO2 = Hg_WetDep 		: 1.15e-5;
+<R48> HgBrO = Hg_WetDep 		: 1.15e-5;
+//OH
+<R48> HgOH = Hg_WetDep 			: 1.15e-5;
+<R48> HgOHOH = Hg_WetDep   		: 1.15e-5;
+<R48> HgOHCl = Hg_WetDep   		: 1.15e-5;
+<R48> HgOHNO2 = Hg_WetDep 		: 1.15e-5;
+<R48> HgOHHO2 = Hg_WetDep 		: 1.15e-5;
+<R48> HgOHO = Hg_WetDep   		: 1.15e-5;
+//Cl
+<R48> HgCl = Hg_WetDep   		: 1.15e-5;
+<R48> HgCl2 = Hg_WetDep   		: 1.15e-5;
+<R48> HgClNO2 = Hg_WetDep   	: 1.15e-5;
+<R48> HgClHO2 = Hg_WetDep   	: 1.15e-5;
+<R48> HgClO = Hg_WetDep   		: 1.15e-5;
+
+
+////// Hg aerosol deposition
+//bromine
+<R48> HgBr_aq = Hg_AerDep     : aerosol_loss;
+<R48> HgBr2_aq = Hg_AerDep    : aerosol_loss;
+<R48> HgBrOH_aq = Hg_AerDep   : aerosol_loss;
+<R48> HgBrCl_aq = Hg_AerDep   : aerosol_loss;
+<R48> HgBrNO2_aq = Hg_AerDep  : aerosol_loss;
+<R48> HgBrHO2_aq = Hg_AerDep  : aerosol_loss;
+<R48> HgBrO_aq = Hg_AerDep    : aerosol_loss;
+//OH
+<R48> HgOH_aq = Hg_AerDep     : aerosol_loss;
+<R48> HgOHOH_aq = Hg_AerDep   : aerosol_loss;
+<R48> HgOHCl_aq = Hg_AerDep   : aerosol_loss;
+<R48> HgOHNO2_aq = Hg_AerDep  : aerosol_loss;
+<R48> HgOHHO2_aq = Hg_AerDep  : aerosol_loss;
+<R48> HgOHO_aq = Hg_AerDep    : aerosol_loss;
+//Cl
+<R48> HgCl_aq = Hg_AerDep     : aerosol_loss;
+<R48> HgCl2_aq = Hg_AerDep    : aerosol_loss;
+<R48> HgClNO2_aq = Hg_AerDep  : aerosol_loss;
+<R48> HgClHO2_aq = Hg_AerDep  : aerosol_loss;
+<R48> HgClO_aq = Hg_AerDep    : aerosol_loss;
+
+
+
+//Inorganic reactions
+{1.}  O = O3                    : 5.6D-34*N2*(TEMP/300)**(-2.6)*O2+6.0D-34*O2*(TEMP/300)**(-2.6)*O2 ;
+{2.}  O + O3 = DUMMY            : 8.0D-12*EXP(-2060/TEMP) ;
+{3.}  O + NO = NO2              : KMT01 ;
+{4.}  O + NO2 = NO              : 5.5D-12*EXP(188/TEMP) ;
+{5.}  O + NO2 = NO3             : KMT02 ;
+{6.}  O1D = O                   : 3.2D-11*EXP(67/TEMP)*O2+2.0D-11*EXP(130/TEMP)*N2 ;
+{7.}  NO + O3 = NO2             : 1.4D-12*EXP(-1310/TEMP) ;
+{8.}  NO2 + O3 = NO3            : 1.4D-13*EXP(-2470/TEMP) ;
+{9.}  NO + NO = NO2 + NO2       : 3.3D-39*EXP(530/TEMP)*O2 ;
+{10.} NO + NO3 = NO2 + NO2      : 1.8D-11*EXP(110/TEMP) ;
+{11.} NO2 + NO3 = NO + NO2      : 4.50D-14*EXP(-1260/TEMP) ;
+{12.} NO2 + NO3 = N2O5          : KMT03 ;
+{13.} O1D = OH + OH             : 2.14D-10*H2O ;
+{14.} OH + O3 = HO2             : 1.70D-12*EXP(-940/TEMP) ;
+{15.} OH + H2 = HO2             : 7.7D-12*EXP(-2100/TEMP) ;
+{16.} OH + CO = HO2             : KMT05 ;
+{17.} OH + H2O2 = HO2           : 2.9D-12*EXP(-160/TEMP) ;
+{18.} HO2 + O3 = OH             : 2.03D-16*(TEMP/300)**4.57*EXP(693/TEMP) ;
+{19.} OH + HO2 = DUMMY          : 4.8D-11*EXP(250/TEMP) ;
+{20.} HO2 + HO2 = H2O2          : 2.20D-13*KMT06*EXP(600/TEMP)+1.90D-33*M*KMT06*EXP(980/TEMP) ;
+{21.} OH + NO = HONO            : KMT07 ;
+{22.} OH + NO2 = HNO3           : KMT08 ;
+{23.} OH + NO3 = HO2 + NO2      : 2.0D-11 ;
+{24.} HO2 + NO = OH + NO2       : 3.45D-12*EXP(270/TEMP) ;
+{25.} HO2 + NO2 = HO2NO2        : KMT09 ;
+{26.} OH + HO2NO2 = NO2         : 3.2D-13*EXP(690/TEMP)*1.0 ;
+{27.} HO2 + NO3 = OH + NO2      : 4.0D-12 ;
+{28.} OH + HONO = NO2           : 2.5D-12*EXP(260/TEMP) ;
+{29.} OH + HNO3 = NO3           : KMT11 ;
+{30.} O + SO2 = SO3             : 4.0D-32*EXP(-1000/TEMP)*M ;
+{31.} OH + SO2 = HSO3           : KMT12 ;
+{32.} HSO3 = HO2 + SO3          : 1.3D-12*EXP(-330/TEMP)*O2 ;
+{33.} HNO3 = NA                 : 6.00D-06 ;
+{34.} N2O5 = NA + NA            : 4.00D-04 ;
+{35.} SO3 = SA                  : 1.20D-15*H2O ;
+{36.} O3 = O1D                  : J(1) ;
+{37.} O3 = O                    : J(2) ;
+{38.} H2O2 = OH + OH            : J(3) ;
+{39.} NO2 = NO + O              : J(4) ;
+{40.} NO3 = NO                  : J(5) ;
+{41.} NO3 = NO2 + O             : J(6) ;
+{42.} HONO = OH + NO            : J(7) ;
+{43.} HNO3 = OH + NO2           : J(8) ;
+{44.} N2O5 = NO2 + NO3          : KMT04 ;
+{45.} HO2NO2 = HO2 + NO2        : KMT10 ;
+
+// Deposition and uptake reactions added outside the MCM - change if necessary
+<R61> OH = DUMMY                : u_OH ;
+<R61> HO2 = DUMMY               : u_HO2+v_HO2;//with surface dep
+<R61> CH3O2 = DUMMY             : u_CH3O2 ;
+<R61> HNO3 = DUMMY              : u_HNO3 + v_HNO3; //with surface dep
+<R61> N2O5 = DUMMY              : u_N2O5 ;
+<R61> NO3 = DUMMY               : u_NO3 ;
+<R61> NO2 = DUMMY               : u_NO2 ;
+<R61> H2O2 = DUMMY              : v_H2O2;
+<R61> CH3OH = DUMMY             : v_CH3OH;
+<R61> CH3OOH = DUMMY            : v_CH3OOH;
+<R61> HCHO = DUMMY              : v_HCHO;
+<R61> CH3CHO = DUMMY            : v_CH3CHO ;
+
+////Methane reactions - necessary for OH
+{1.} 	 CL + CH4 = CH3O2 : 	6.6D-12*EXP(-1240/TEMP) 	;
+{2.} 	 OH + CH4 = CH3O2 : 	1.85D-12*EXP(-1690/TEMP) 	;
+{3.} 	 CH3O2 + HO2 = CH3OOH : 	3.8D-13*EXP(780/TEMP)*(1-1/(1+498*EXP(-1160/TEMP))) ;
+{4.} 	 CH3O2 + HO2 = HCHO : 	3.8D-13*EXP(780/TEMP)*(1/(1+498*EXP(-1160/TEMP))) 	;
+{5.} 	 CH3O2 + NO = CH3NO3 : 	2.3D-12*EXP(360/TEMP)*0.001 	;
+{6.} 	 CH3O2 + NO = CH3O + NO2 : 	2.3D-12*EXP(360/TEMP)*0.999 	;
+{7.} 	 CH3O2 + NO2 = CH3O2NO2 : 	KMT13 	;
+{8.} 	 CH3O2 + NO3 = CH3O + NO2 : 	1.2D-12 	;
+{9.} 	 CH3O2 = CH3O : 	2*KCH3O2*RO2*7.18*EXP(-885/TEMP) 	;
+{10.} 	 CH3O2 = CH3OH : 	2*KCH3O2*RO2*0.5*(1-7.18*EXP(-885/TEMP)) 	;
+{11.} 	 CH3O2 = HCHO : 	2*KCH3O2*RO2*0.5*(1-7.18*EXP(-885/TEMP)) 	;
+{12.} 	 CH3OOH = CH3O + OH : 	J(41) 	;
+{13.} 	 OH + CH3OOH = CH3O2 : 	5.3D-12*EXP(190/TEMP)*0.6 	;
+{14.} 	 OH + CH3OOH = HCHO + OH : 	5.3D-12*EXP(190/TEMP)*0.4 	;
+{15.} 	 HCHO = CO + HO2 + HO2 : 	J(11) 	;
+{16.} 	 HCHO = H2 + CO : 	J(12) 	;
+{17.} 	 NO3 + HCHO = HNO3 + CO + HO2 : 	5.5D-16 	;
+{18.} 	 OH + HCHO = HO2 + CO : 	5.4D-12*EXP(135/TEMP) 	;
+{19.} 	 CH3NO3 = CH3O + NO2 : 	J(51) 	;
+{20.} 	 OH + CH3NO3 = HCHO + NO2 : 	4.0D-13*EXP(-845/TEMP) 	;
+{21.} 	 CH3O = HCHO + HO2 : 	7.2D-14*EXP(-1080/TEMP)*O2 	;
+{22.} 	 CH3O2NO2 = CH3O2 + NO2 : 	KMT14 	;
+{23.} 	 CH3OH + OH = HO2 + HCHO : 	2.85D-12*EXP(-345/TEMP) 	;
