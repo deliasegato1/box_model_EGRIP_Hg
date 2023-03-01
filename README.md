@@ -11,7 +11,18 @@ Instructions using Ubuntu terminal:
 ```
 cd $KPP_HOME
 ```
-4) make distclean
-5) make
-6) change directory to with cd
-7) 
+3) Clean the KPP installation, delete the KPP object files and all the examples with:
+```
+make clean
+make distclean
+```
+
+4) Create the kpp executable with:
+```
+make
+```
+5) change directory to where box_model_update is stored
+6) Run the model:
+```
+kpp box.kpp
+```
